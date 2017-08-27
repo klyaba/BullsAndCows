@@ -24,6 +24,28 @@ angular.module("game", [])
             fourthDigit: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         }
 
+        var init = function () {
+            var i, j, temp;
+            var fSem = false;
+            $scope.model.trueNumber[0] = Math.floor(Math.random() * 10);
+            for (i = 1; i < 4; i++) {
+                while (!fsem) {
+                    temp = Math.floor(Math.random() * 10);
+                    for (j = i - 1; j >= 0; j--) {
+                        if (temp == $scope.model.trueNumber[j]) {
+                            fSem = false;
+                            break
+                        }
+                        else {
+                            fSem = true;
+                        }
+                    }
+                }
+
+            }
+        }
+        init();
+
         $scope.click = function (position, digit) {
             $scope.model.number[position] = digit;
         }

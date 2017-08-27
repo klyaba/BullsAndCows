@@ -16,7 +16,7 @@
 </head>
 <body>
 <%--Загаданное число: ${number}--%>
-<div ng-controller="gameController">
+<div ng-init="init()" ng-controller="gameController">
 
     <button ng-show="model.flag" ng-click="restart()">{{model.message}}</button>
     <br>
@@ -57,45 +57,37 @@
 
         .controller("gameController", function ($scope, $http) {
             $scope.model = {
-                test: 0,
                 attempts: 0,
                 bulls: 0,
                 cows: 0,
-                lines: [],
                 numbers: [{num: "0000", res: ""}],
                 number: [0, 0, 0, 0],
                 result: "Неверно",
                 message: "Новая игра",
                 firstTryFlag: false,
                 uniqueFlag: false,
-                trueNumber: [0, 0, 0, 0],
-                firstDigit: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                secondDigit: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                thirdDigit: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                fourthDigit: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+                trueNumber: [],
+                firstDigit: [],
+                secondDigit: [],
+                thirdDigit: [],
+                fourthDigit: []
             }
 
-           $scope.init = function () {
-               var i, j, temp;
-               var fSem = false;
-               $scope.model.trueNumber[0] = Math.floor(Math.random() * 10);
-               for (i = 1; i < 4; i++) {
-                   while (!fsem) {
-                       temp = Math.floor(Math.random() * 10);
-                       for (j = i - 1; j >= 0; j--) {
-                           if (temp == $scope.model.trueNumber[j]) {
-                               fSem = false;
-                               break
-                           }
-                           else {
-                               fSem = true;
-                           }
-                       }
-                   }
+            $scope.init = function () {
+                var i;
+                var temp = [];
+                for (i = 0; i < 10; i++) {
+                    temp[i] = $scope.model.firstDigit[i] = $scope.model.secondDigit[i] = $scope.model.thirdDigit[i] = $scope.model.fourthDigit[i] = i;
 
-               }
-           }
-            init();
+                }
+                temp.sort(function () {
+                    return 0.5 - Math.random()
+                });
+//                Collections.shuffle(Arrays.asList(temp));
+                for (i = 0; i < 4; i++) {
+                    $scope.model.trueNumber[i] = temp[i];
+                }
+            }
 
             $scope.click = function (position, digit) {
                 $scope.model.number[position] = digit;
