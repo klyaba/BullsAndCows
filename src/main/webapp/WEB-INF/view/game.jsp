@@ -16,23 +16,26 @@
 </head>
 <body>
 <%--Загаданное число: ${number}--%>
+<a href="<c:url value="/j_spring_security_logout" />">logout</a>
+<a href="<spring:url value="/profile" />">Back</a>
 <div ng-init="init()" ng-controller="gameController">
 
-    <button ng-show="model.flag" ng-click="restart()">{{model.message}}</button>
-    <br>
     Число попыток: {{model.attempts}} <br>
-    Загаданное число: <label ng-repeat="digit in model.trueNumber">{{digit}}</label><br>
-    Первая цифра:<label ng-repeat="digit in model.firstDigit" ng-click="click(0, digit)">{{digit}} </label><br>
-    Вторая цифра:<label ng-repeat="digit in model.secondDigit" ng-click="click(1, digit)">{{digit}} </label><br>
-    Третья цифра:<label ng-repeat="digit in model.thirdDigit" ng-click="click(2, digit)">{{digit}} </label><br>
-    Четвертая цифра:<label ng-repeat="digit in model.fourthDigit" ng-click="click(3, digit)">{{digit}} </label><br>
-    <button ng-click="try()">Попробовать число:</button>
-    <label ng-repeat="digit in model.number">{{digit}} </label><br>
-    <label ng-show="model.uniqueFlag">Число повторяется</label><br>
-
-    <label ng-show="model.firstTryFlag">{{model.result}}</label><br>
-    <label ng-show="model.firstTryFlag">Bulls: {{model.bulls}}</label>
-    <label ng-show="model.firstTryFlag">Cows: {{model.cows}}</label><br>
+    <label ng-show="!model.winFlag"> Загаданное число: <label
+            ng-repeat="digit in model.trueNumber">{{digit}}</label></label><br>
+    <label ng-show="!model.winFlag">Первая цифра:<label ng-repeat="digit in model.firstDigit"
+                                                        ng-click="click(0, digit)">{{digit}} </label></label><br>
+    <label ng-show="!model.winFlag">Вторая цифра:<label ng-repeat="digit in model.secondDigit"
+                                                        ng-click="click(1, digit)">{{digit}} </label></label><br>
+    <label ng-show="!model.winFlag">Третья цифра:<label ng-repeat="digit in model.thirdDigit"
+                                                        ng-click="click(2, digit)">{{digit}} </label></label><br>
+    <label ng-show="!model.winFlag">Четвертая цифра:<label ng-repeat="digit in model.fourthDigit"
+                                                           ng-click="click(3, digit)">{{digit}} </label></label><br>
+    <button ng-show="!model.winFlag" ng-click="try()">Попробовать число:</button>
+    <label ng-show="!model.winFlag" ng-repeat="digit in model.number">{{digit}} </label><br>
+    <label ng-show="model.uniqueFlag || !model.difFlag || model.winFlag">{{model.message}}</label><br>
+    <button ng-show="model.winFlag" ng-click="restart()">Заново</button>
+    <br>
 
     <table class="table" ng-show="model.firstTryFlag">
         <thead>
@@ -60,12 +63,14 @@
                 attempts: 0,
                 bulls: 0,
                 cows: 0,
-                numbers: [{num: "0000", res: ""}],
+                numbers: [{num: "", res: ""}],
                 number: [0, 0, 0, 0],
                 result: "Неверно",
                 message: "Новая игра",
                 firstTryFlag: false,
                 uniqueFlag: false,
+                difFlag: true,
+                winFlag: false,
                 trueNumber: [],
                 firstDigit: [],
                 secondDigit: [],
@@ -83,10 +88,23 @@
                 temp.sort(function () {
                     return 0.5 - Math.random()
                 });
-//                Collections.shuffle(Arrays.asList(temp));
                 for (i = 0; i < 4; i++) {
                     $scope.model.trueNumber[i] = temp[i];
+                    $scope.model.number[i] = 0;
                 }
+            }
+
+            $scope.restart = function () {
+                $scope.model.winFlag = false;
+                $scope.model.firstTryFlag = false;
+                $scope.model.attempts = 0;
+
+                $scope.model.numbers.splice(0, $scope.model.numbers.length, {
+                    num: "",
+                    res: ""
+                });
+
+                $scope.init();
             }
 
             $scope.click = function (position, digit) {
@@ -94,51 +112,78 @@
             }
 
             $scope.try = function () {
+                $scope.model.difFlag = true;
                 $scope.model.uniqueFlag = false;
+
+//                Проверка на неповторяемость цифр в числе
+                var i, j;
+                for (i = 1; i < 4; i++) {
+                    for (j = i - 1; j >= 0; j--) {
+                        if ($scope.model.number[i] == $scope.model.number[j]) {
+                            $scope.model.difFlag = false;
+                            $scope.model.message = "Цифры не должны повторяться";
+                            break;
+                        }
+                    }
+                    if ($scope.model.difFlag == false) {
+                        break;
+                    }
+                }
+
+//              Проверка на неповторяемость чисел
+//              В первый раз не выполняется
                 if ($scope.model.firstTryFlag) {
                     var k;
                     for (k = 0; k < $scope.model.numbers.length; k++) {
                         if (parseInt($scope.model.number.join("")) == parseInt($scope.model.numbers[k].num)) {
                             $scope.model.uniqueFlag = true;
+                            $scope.model.message = "Это число уже было";
+                            break;
                         }
                     }
                 }
 
                 if (!$scope.model.uniqueFlag) {
-                    $scope.model.attempts++;
+                    if ($scope.model.difFlag) {
+                        $scope.model.attempts++;
 
-                    $scope.model.bulls = 0;
-                    $scope.model.cows = 0;
-                    var i, j;
-                    for (i = 0; i < 4; i++) {
-                        for (j = 0; j < 4; j++) {
-                            if ($scope.model.number[i] == $scope.model.trueNumber[j]) {
-                                if (i == j) {
-                                    $scope.model.bulls++;
-                                }
-                                else {
-                                    $scope.model.cows++;
+                        $scope.model.bulls = 0;
+                        $scope.model.cows = 0;
+                        var i, j;
+//                            Подсчет быков и коров
+                        for (i = 0; i < 4; i++) {
+                            for (j = 0; j < 4; j++) {
+                                if ($scope.model.number[i] == $scope.model.trueNumber[j]) {
+                                    if (i == j) {
+                                        $scope.model.bulls++;
+                                        break;
+                                    }
+                                    else {
+                                        $scope.model.cows++;
+                                        break;
+                                    }
                                 }
                             }
                         }
-                    }
-                    if ($scope.model.bulls == 4) {
-                        $scope.model.result = "Верно";
-                        $scope.model.message = "Сыграть заново";
-                    }
 
-                    if (!$scope.model.firstTryFlag) {
-                        $scope.model.numbers.splice(0, 1, {
-                            num: $scope.model.number.join(""),
-                            res: $scope.model.bulls + "B" + $scope.model.cows + "C"
-                        });
-                        $scope.model.firstTryFlag = true;
-                    }
-                    else {
-                        $scope.model.numbers.splice($scope.model.numbers.length, 0, {
-                            num: $scope.model.number.join(""),
-                            res: $scope.model.bulls + "B" + $scope.model.cows + "C"
-                        });
+                        if (!$scope.model.firstTryFlag) {
+                            $scope.model.numbers.splice(0, 1, {
+                                num: $scope.model.number.join(""),
+                                res: $scope.model.bulls + "B" + $scope.model.cows + "C"
+                            });
+                            $scope.model.firstTryFlag = true;
+                        }
+                        else {
+                            $scope.model.numbers.splice($scope.model.numbers.length, 0, {
+                                num: $scope.model.number.join(""),
+                                res: $scope.model.bulls + "B" + $scope.model.cows + "C"
+                            });
+                        }
+
+                        if ($scope.model.bulls == 4) {
+                            $scope.model.winFlag = true;
+                            $scope.model.message = "Угадано";
+                        }
                     }
                 }
             }
